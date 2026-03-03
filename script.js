@@ -1,4 +1,596 @@
 // ===================================
+// Mobile Navigation Enhancement
+// ===================================
+
+function initMobileNav() {
+    const menuToggle = document.querySelector('.menu-toggle');
+    const navList = document.querySelector('.nav-list');
+    const navOverlay = document.createElement('div');
+    navOverlay.className = 'nav-overlay';
+    document.body.appendChild(navOverlay);
+
+    // Toggle menu
+    if (menuToggle && navList) {
+        menuToggle.addEventListener('click', () => {
+            navList.classList.toggle('active');
+            menuToggle.classList.toggle('active');
+            navOverlay.classList.toggle('active');
+            document.body.style.overflow = navList.classList.contains('active') ? 'hidden' : '';
+        });
+
+        // Close on overlay click
+        navOverlay.addEventListener('click', () => {
+            navList.classList.remove('active');
+            menuToggle.classList.remove('active');
+            navOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        });
+
+        // Close on link click
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                navList.classList.remove('active');
+                menuToggle.classList.remove('active');
+                navOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+        });
+
+        // Close on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && navList.classList.contains('active')) {
+                navList.classList.remove('active');
+                menuToggle.classList.remove('active');
+                navOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+    }
+}
+
+// ===================================
+// Floating Action Button
+// ===================================
+
+function initFloatingButton() {
+    const fab = document.createElement('button');
+    fab.className = 'fab-button';
+    fab.innerHTML = '<i class="fas fa-paper-plane"></i>';
+    fab.setAttribute('aria-label', 'تواصل معي');
+    fab.title = 'تواصل معي';
+    document.body.appendChild(fab);
+
+    // Scroll to contact section on click
+    fab.addEventListener('click', () => {
+        const contactSection = document.getElementById('contact');
+        if (contactSection) {
+            const headerOffset = 80;
+            const elementPosition = contactSection.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
+        }
+    });
+
+    // Hide FAB on scroll up, show on scroll down
+    let lastScroll = 0;
+    window.addEventListener('scroll', () => {
+        const currentScroll = window.pageYOffset;
+
+        if (currentScroll <= 0) {
+            fab.style.opacity = '1';
+            fab.style.transform = 'translateY(0)';
+        } else if (currentScroll > lastScroll && currentScroll > 200) {
+            // Scrolling down - hide FAB
+            fab.style.opacity = '0';
+            fab.style.transform = 'translateY(20px)';
+        } else {
+            // Scrolling up - show FAB
+            fab.style.opacity = '1';
+            fab.style.transform = 'translateY(0)';
+        }
+        lastScroll = currentScroll;
+    });
+}
+
+// ===================================
+// Lazy Loading Images
+// ===================================
+
+function initLazyLoading() {
+    const images = document.querySelectorAll('img[data-src]');
+
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.dataset.src;
+                img.classList.add('lazy-loaded');
+                img.classList.remove('lazy');
+                observer.unobserve(img);
+            }
+        });
+    }, {
+        rootMargin: '50px 0px',
+        threshold: 0.01
+    });
+
+    images.forEach(img => {
+        img.classList.add('lazy');
+        imageObserver.observe(img);
+    });
+}
+
+// ===================================
+// Enhanced Form Validation
+// ===================================
+
+function initFormValidation() {
+    const form = document.querySelector('.contact-form');
+    if (!form) return;
+
+    const inputs = form.querySelectorAll('input, textarea');
+
+    // Add validation on blur
+    inputs.forEach(input => {
+        input.addEventListener('blur', () => {
+            validateField(input);
+        });
+
+        input.addEventListener('input', () => {
+            // Remove error state on input
+            if (input.classList.contains('error')) {
+                input.classList.remove('error');
+                const errorMsg = input.parentElement.querySelector('.error-message');
+                if (errorMsg) errorMsg.remove();
+            }
+        });
+    });
+
+    // Form submit validation
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        let isValid = true;
+
+        inputs.forEach(input => {
+            if (!validateField(input)) {
+                isValid = false;
+            }
+        });
+
+        if (isValid) {
+            // Show success message
+            showNotification('شكراً لك! تم إرسال رسالتك بنجاح.', 'success');
+            form.reset();
+
+            // Remove success styling
+            inputs.forEach(input => {
+                input.classList.remove('success');
+            });
+        }
+    });
+
+    function validateField(input) {
+        const value = input.value.trim();
+        let isValid = true;
+        let errorMessage = '';
+
+        // Remove existing error
+        input.classList.remove('error', 'success');
+        const existingError = input.parentElement.querySelector('.error-message');
+        if (existingError) existingError.remove();
+
+        // Required validation
+        if (input.hasAttribute('required') && !value) {
+            isValid = false;
+            errorMessage = 'هذا الحقل مطلوب';
+        }
+
+        // Email validation
+        if (input.type === 'email' && value) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(value)) {
+                isValid = false;
+                errorMessage = 'يرجى إدخال بريد إلكتروني صحيح';
+            }
+        }
+
+        if (!isValid) {
+            input.classList.add('error');
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.textContent = errorMessage;
+            input.parentElement.appendChild(errorDiv);
+        } else if (value) {
+            input.classList.add('success');
+        }
+
+        return isValid;
+    }
+
+    function showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <span>${message}</span>
+            <button class="notification-close"><i class="fas fa-times"></i></button>
+        `;
+
+        // Add notification styles
+        notification.style.cssText = `
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: ${type === 'success' ? '#2ed573' : '#ff4757'};
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            z-index: 10000;
+            animation: slideDown 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        `;
+
+        document.body.appendChild(notification);
+
+        // Close button
+        notification.querySelector('.notification-close').addEventListener('click', () => {
+            notification.remove();
+        });
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+}
+
+// ===================================
+// Scroll Indicator
+// ===================================
+
+function initScrollIndicator() {
+    const hero = document.querySelector('.hero');
+    if (!hero) return;
+
+    const indicator = document.createElement('div');
+    indicator.className = 'scroll-indicator';
+    indicator.innerHTML = `
+        <span>تصفح</span>
+        <div class="mouse"></div>
+    `;
+    hero.appendChild(indicator);
+
+    // Remove on scroll
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 100) {
+            indicator.style.opacity = '0';
+            setTimeout(() => indicator.remove(), 300);
+        }
+    }, { passive: true });
+}
+
+// ===================================
+// Touch Gesture Support
+// ===================================
+
+function initTouchGestures() {
+    // Detect touch device
+    if (!('ontouchstart' in window)) return;
+
+    // Add touch class to body
+    document.body.classList.add('touch-device');
+
+    // Swipe detection for testimonials
+    const testimonialCards = document.querySelectorAll('.testimonial-card');
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    testimonialCards.forEach(card => {
+        card.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        card.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe(card);
+        }, { passive: true });
+    });
+
+    function handleSwipe(card) {
+        const swipeThreshold = 50;
+        const diff = touchStartX - touchEndX;
+
+        if (Math.abs(diff) > swipeThreshold) {
+            if (diff > 0) {
+                // Swipe left - next card
+                card.style.transform = 'translateX(-100%) rotate(-5deg)';
+            } else {
+                // Swipe right - previous card
+                card.style.transform = 'translateX(100%) rotate(5deg)';
+            }
+
+            // Reset after animation
+            setTimeout(() => {
+                card.style.transform = '';
+            }, 300);
+        }
+    }
+}
+
+// ===================================
+// Improved Touch Interactions
+// ===================================
+
+function initImprovedTouchInteractions() {
+    // Add active states to buttons
+    const buttons = document.querySelectorAll('.btn, .theme-toggle, .lang-toggle, .fab-button');
+
+    buttons.forEach(btn => {
+        btn.addEventListener('touchstart', function() {
+            this.classList.add('touch-active');
+        }, { passive: true });
+
+        btn.addEventListener('touchend', function() {
+            this.classList.remove('touch-active');
+        }, { passive: true });
+    });
+
+    // Card touch feedback
+    const cards = document.querySelectorAll('.service-card, .skill-card, .testimonial-card');
+    cards.forEach(card => {
+        card.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease';
+    });
+}
+
+// ===================================
+// Modern Visual Interactions
+// ===================================
+
+// Create scroll progress bar
+function initScrollProgress() {
+    const progressBar = document.createElement('div');
+    progressBar.className = 'scroll-progress';
+    document.body.appendChild(progressBar);
+
+    window.addEventListener('scroll', () => {
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight - windowHeight;
+        const scrolled = window.scrollY;
+        const progress = (scrolled / documentHeight) * 100;
+        progressBar.style.width = progress + '%';
+    });
+}
+
+// Custom cursor
+function initCustomCursor() {
+    const cursor = document.createElement('div');
+    cursor.className = 'custom-cursor';
+    document.body.appendChild(cursor);
+
+    const cursorDot = document.createElement('div');
+    cursorDot.className = 'cursor-dot';
+    document.body.appendChild(cursorDot);
+
+    let mouseX = 0, mouseY = 0;
+    let cursorX = 0, cursorY = 0;
+    let dotX = 0, dotY = 0;
+
+    document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    });
+
+    function animateCursor() {
+        // Smooth follow for outer cursor
+        cursorX += (mouseX - cursorX) * 0.15;
+        cursorY += (mouseY - cursorY) * 0.15;
+
+        // Faster follow for dot
+        dotX += (mouseX - dotX) * 0.3;
+        dotY += (mouseY - dotY) * 0.3;
+
+        cursor.style.left = cursorX - 10 + 'px';
+        cursor.style.top = cursorY - 10 + 'px';
+        cursorDot.style.left = dotX - 4 + 'px';
+        cursorDot.style.top = dotY - 4 + 'px';
+
+        requestAnimationFrame(animateCursor);
+    }
+    animateCursor();
+
+    // Add hover effect on interactive elements
+    const hoverElements = document.querySelectorAll('a, button, .service-card, .skill-card, .nav-link');
+    hoverElements.forEach(el => {
+        el.addEventListener('mouseenter', () => cursor.classList.add('hovering'));
+        el.addEventListener('mouseleave', () => cursor.classList.remove('hovering'));
+    });
+
+    // Hide cursor when leaving window
+    document.addEventListener('mouseleave', () => {
+        cursor.style.opacity = '0';
+        cursorDot.style.opacity = '0';
+    });
+    document.addEventListener('mouseenter', () => {
+        cursor.style.opacity = '1';
+        cursorDot.style.opacity = '1';
+    });
+}
+
+// 3D Tilt Effect for Cards
+function initTiltEffect() {
+    const cards = document.querySelectorAll('.service-card, .skill-card, .testimonial-card');
+
+    cards.forEach(card => {
+        card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+
+            const rotateX = (y - centerY) / 10;
+            const rotateY = (centerX - x) / 10;
+
+            card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-10px)`;
+        });
+
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) translateY(-10px)';
+        });
+    });
+}
+
+// Section Reveal Animation
+function initSectionReveal() {
+    const sections = document.querySelectorAll('section');
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('revealed');
+            }
+        });
+    }, { threshold: 0.1 });
+
+    sections.forEach(section => {
+        section.style.opacity = '0';
+        section.style.transform = 'translateY(50px)';
+        section.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+        observer.observe(section);
+    });
+
+    // Add CSS for revealed state
+    const style = document.createElement('style');
+    style.textContent = `
+        section.revealed {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// Parallax Effect for Hero
+function initParallax() {
+    const shapes = document.querySelectorAll('.hero-shape');
+
+    window.addEventListener('scroll', () => {
+        const scrolled = window.scrollY;
+        shapes.forEach((shape, index) => {
+            const speed = 0.1 + (index * 0.05);
+            shape.style.transform = `translateY(${scrolled * speed}px)`;
+        });
+    });
+}
+
+// Image Hover Zoom Effect
+function initImageZoom() {
+    const images = document.querySelectorAll('.image-box img, .image-wrapper img');
+    images.forEach(img => {
+        img.style.transition = 'transform 0.5s ease';
+        img.parentElement.addEventListener('mouseenter', () => {
+            img.style.transform = 'scale(1.1)';
+        });
+        img.parentElement.addEventListener('mouseleave', () => {
+            img.style.transform = 'scale(1)';
+        });
+    });
+}
+
+// Enhanced Navigation
+function initEnhancedNav() {
+    // Add smooth scroll with offset for fixed header
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                const headerOffset = 80;
+                const elementPosition = target.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+
+    // Active link on scroll
+    const sections = document.querySelectorAll('section[id]');
+    window.addEventListener('scroll', () => {
+        let current = '';
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            const sectionHeight = section.clientHeight;
+            if (pageYOffset >= sectionTop - 200) {
+                current = section.getAttribute('id');
+            }
+        });
+
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === '#' + current) {
+                link.classList.add('active');
+            }
+        });
+    });
+}
+
+// Typing Effect for Hero Title
+function initTypingEffect() {
+    const title = document.querySelector('.hero-title .highlight');
+    if (title) {
+        const text = title.textContent;
+        title.textContent = '';
+        let i = 0;
+
+        function type() {
+            if (i < text.length) {
+                title.textContent += text.charAt(i);
+                i++;
+                setTimeout(type, 100);
+            }
+        }
+
+        // Start typing after page loads
+        setTimeout(type, 1000);
+    }
+}
+
+// Initialize all modern effects
+document.addEventListener('DOMContentLoaded', function() {
+    initScrollProgress();
+    initCustomCursor();
+    initTiltEffect();
+    initSectionReveal();
+    initParallax();
+    initImageZoom();
+    initEnhancedNav();
+    initTypingEffect();
+
+    // New mobile and interaction improvements
+    initMobileNav();
+    initFloatingButton();
+    initLazyLoading();
+    initFormValidation();
+    initScrollIndicator();
+    initTouchGestures();
+    initImprovedTouchInteractions();
+});
+
+// ===================================
 // WebGL/Three.js Implementation
 // ===================================
 
